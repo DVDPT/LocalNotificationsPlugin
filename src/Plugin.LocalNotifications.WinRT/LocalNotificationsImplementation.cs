@@ -26,20 +26,15 @@ namespace Plugin.LocalNotifications
 		/// <param name="title">Title of the notification</param>
 		/// <param name="body">Body or description of the notification</param>
 		/// <param name="id">Id of the notification</param>
-        public void Show(string title, string body, int id = 0)
+        public void Show(string title, string body, int id = 0, string launchArgs = null)
         {
-            var xmlData = string.Format(_TOAST_TEXT02_TEMPLATE, title, body);
-
-            var xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(xmlData);
+            var xmlDoc = GetXmlDoc(title, body, launchArgs);
 
             // Create a toast
             var toast = new ToastNotification(xmlDoc);
-            
-
             // Create a toast notifier and show the toast
             var manager = ToastNotificationManager.CreateToastNotifier();
-           
+
             manager.Show(toast);
         }
 
@@ -50,12 +45,9 @@ namespace Plugin.LocalNotifications
 		/// <param name="body">Body or description of the notification</param>
 		/// <param name="id">Id of the notification</param>
 		/// <param name="notifyTime">Time to show notification</param>
-        public void Show(string title, string body, int id, DateTime notifyTime)
+        public void Show(string title, string body, int id, DateTime notifyTime, string launchArgs = null)
         {
-            var xmlData = string.Format(_TOAST_TEXT02_TEMPLATE, title, body);
-
-            var xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(xmlData);
+            var xmlDoc = GetXmlDoc(title, body, launchArgs);
 
             var correctedTime = notifyTime <= DateTime.Now
               ? DateTime.Now.AddMilliseconds(100)
@@ -67,6 +59,44 @@ namespace Plugin.LocalNotifications
             };
 
             TileUpdateManager.CreateTileUpdaterForApplication().AddToSchedule(scheduledTileNotification);
+        }
+
+        public void SetBadge(int num)
+        {
+            // Get the blank badge XML payload for a badge number
+            XmlDocument badgeXml =
+                BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeNumber);
+
+            // Set the value of the badge in the XML to our number
+            XmlElement badgeElement = badgeXml.SelectSingleNode("/badge") as XmlElement;
+            badgeElement.SetAttribute("value", num.ToString());
+
+            // Create the badge notification
+            BadgeNotification badge = new BadgeNotification(badgeXml);
+
+            // Create the badge updater for the application
+            BadgeUpdater badgeUpdater =
+                BadgeUpdateManager.CreateBadgeUpdaterForApplication();
+
+            // And update the badge
+            badgeUpdater.Update(badge);
+        }
+
+        private static XmlDocument GetXmlDoc(string title, string body, string launchArgs)
+        {
+            var xmlData = string.Format(_TOAST_TEXT02_TEMPLATE, title, body);
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(xmlData);
+
+            if (string.IsNullOrEmpty(launchArgs) == false)
+            {
+                var n = xmlDoc.SelectSingleNode("toast");
+                var launchAttribute = xmlDoc.CreateAttribute("launch");
+                launchAttribute.Value = launchArgs;
+                n.Attributes.SetNamedItem(launchAttribute);
+            }
+            return xmlDoc;
         }
 
         /// <summary>

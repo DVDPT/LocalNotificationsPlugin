@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Xml.Serialization;
 using Android.App;
@@ -34,7 +35,12 @@ namespace Plugin.LocalNotifications
                 .SetAutoCancel(true);
 
             var resultIntent = LocalNotificationsImplementation.GetLauncherActivity();
-            resultIntent.SetFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
+            resultIntent.SetAction(Guid.NewGuid().ToString());
+            if (string.IsNullOrEmpty(notification.LaunchArgs) == false)
+            {
+                resultIntent.PutExtra(LocalNotificationsImplementation.ToastLaunchArgsExtra, notification.LaunchArgs);
+            }
+            resultIntent.SetFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask | ActivityFlags.SingleTop);
             var stackBuilder = Android.Support.V4.App.TaskStackBuilder.Create(Application.Context);
             stackBuilder.AddNextIntent(resultIntent);
             var resultPendingIntent =
@@ -42,6 +48,9 @@ namespace Plugin.LocalNotifications
             builder.SetContentIntent(resultPendingIntent);
 
             var notificationManager = NotificationManagerCompat.From(Application.Context);
+
+
+
             notificationManager.Notify(notification.Id, builder.Build());
         }
 

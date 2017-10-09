@@ -16,7 +16,7 @@ namespace Plugin.LocalNotifications
 		/// <param name="title">Title of the notification</param>
 		/// <param name="body">Body or description of the notification</param>
 		/// <param name="id">Id of the notification</param>
-		public void Show(string title, string body, int id = 0)
+		public void Show(string title, string body, int id = 0, string launchArgs = null)
 		{
 			Show(title, body, id, DateTime.Now);
 		}
@@ -28,7 +28,7 @@ namespace Plugin.LocalNotifications
 		/// <param name="body">Body or description of the notification</param>
 		/// <param name="id">Id of the notification</param>
 		/// <param name="notifyTime">Time to show notification</param>
-		public void Show(string title, string body, int id, DateTime notifyTime)
+		public void Show(string title, string body, int id, DateTime notifyTime, string launchArgs = null)
 		{
 			var notification = new NSUserNotification()
 			{
@@ -41,7 +41,12 @@ namespace Plugin.LocalNotifications
 			NSUserNotificationCenter.DefaultUserNotificationCenter.ScheduleNotification(notification);
 		}
 
-		/// <summary>
+	    public void SetBadge(int count)
+	    {
+	        throw new NotImplementedException();
+	    }
+
+	    /// <summary>
 		/// Cancel a local notification
 		/// </summary>
 		/// <param name="id">Id of the notification to cancel</param>

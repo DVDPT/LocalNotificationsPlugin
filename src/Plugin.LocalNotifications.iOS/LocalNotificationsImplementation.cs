@@ -13,6 +13,7 @@ namespace Plugin.LocalNotifications
     public class LocalNotificationsImplementation : ILocalNotifications
     {
         private const string NotificationKey = "LocalNotificationKey";
+        public const string LaunchUserInfoParam = "LaunchUserInfoParam";
 
         /// <summary>
         /// Show a local notification
@@ -20,12 +21,12 @@ namespace Plugin.LocalNotifications
         /// <param name="title">Title of the notification</param>
         /// <param name="body">Body or description of the notification</param>
         /// <param name="id">Id of the notification</param>
-        public void Show(string title, string body, int id = 0)
+        public void Show(string title, string body, int id = 0, string launchArgs = null)
         {
             if (UIDevice.CurrentDevice.CheckSystemVersion(10, 0))
             {
                 var trigger = UNTimeIntervalNotificationTrigger.CreateTrigger(.1, false);
-                ShowUserNotification(title, body, id, trigger);
+                ShowUserNotification(title, body, id, trigger, launchArgs);
             }
             else
             {
@@ -40,12 +41,12 @@ namespace Plugin.LocalNotifications
         /// <param name="body">Body or description of the notification</param>
         /// <param name="id">Id of the notification</param>
         /// <param name="notifyTime">Time to show notification</param>
-        public void Show(string title, string body, int id, DateTime notifyTime)
+        public void Show(string title, string body, int id, DateTime notifyTime, string launchArgs = null)
         {
             if (UIDevice.CurrentDevice.CheckSystemVersion(10, 0))
             {
                 var trigger = UNCalendarNotificationTrigger.CreateTrigger(GetNSDateComponentsFromDateTime(notifyTime), false);
-                ShowUserNotification(title, body, id, trigger);
+                ShowUserNotification(title, body, id, trigger, launchArgs);
             }
             else
             {
@@ -57,8 +58,16 @@ namespace Plugin.LocalNotifications
                     UserInfo = NSDictionary.FromObjectAndKey(NSObject.FromObject(id), NSObject.FromObject(NotificationKey))
                 };
 
+                if (string.IsNullOrEmpty(launchArgs) == false)
+                    notification.UserInfo.SetValueForKey(new NSString(launchArgs), new NSString(LaunchUserInfoParam));
+
                 UIApplication.SharedApplication.ScheduleLocalNotification(notification);
             }
+        }
+
+        public void SetBadge(int count)
+        {
+            UIApplication.SharedApplication.ApplicationIconBadgeNumber = count;
         }
 
         /// <summary>
@@ -86,7 +95,7 @@ namespace Plugin.LocalNotifications
         }
 
         // Show local notifications using the UNUserNotificationCenter using a notification trigger (iOS 10+ only)
-        void ShowUserNotification(string title, string body, int id, UNNotificationTrigger trigger)
+        void ShowUserNotification(string title, string body, int id, UNNotificationTrigger trigger, string launchArgs)
         {
             if (!UIDevice.CurrentDevice.CheckSystemVersion(10, 0))
             {
@@ -96,12 +105,21 @@ namespace Plugin.LocalNotifications
             var content = new UNMutableNotificationContent()
             {
                 Title = title,
-                Body = body
+                Body = body,
+                UserInfo = GetUserInfoForLaunch(launchArgs)
             };
-            
+
             var request = UNNotificationRequest.FromIdentifier(id.ToString(), content, trigger);
 
             UNUserNotificationCenter.Current.AddNotificationRequest(request, (error) => { });
+        }
+
+        private static NSDictionary GetUserInfoForLaunch(string launchArgs)
+        {
+            if (string.IsNullOrEmpty(launchArgs))
+                return null;
+
+            return NSDictionary.FromObjectAndKey(NSObject.FromObject(launchArgs), NSObject.FromObject(LaunchUserInfoParam));
         }
 
         NSDateComponents GetNSDateComponentsFromDateTime(DateTime dateTime)
